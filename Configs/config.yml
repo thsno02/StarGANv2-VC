@@ -1,7 +1,7 @@
 log_dir: "Models/VCTK20"
 save_freq: 2
 device: "cuda"
-epochs: 150
+epochs: 250
 batch_size: 10
 pretrained_model: ""
 load_only_params: false
