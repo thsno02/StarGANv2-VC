@@ -35,6 +35,15 @@ logger.addHandler(handler)
 
 torch.backends.cudnn.benchmark = True #
 
+# simple fix for dataparallel that allows access to class attributes
+class MyDataParallel(torch.nn.DataParallel):
+    def __getattr__(self, name):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            return getattr(self.module, name)
+
+
 @click.command()
 @click.option('-p', '--config_path', default='Configs/config.yml', type=str)
 
@@ -109,6 +118,10 @@ def main(config_path):
     
     _ = [model[key].to(device) for key in model]
     _ = [model_ema[key].to(device) for key in model_ema]
+    for key in model:
+        model[key] = MyDataParallel(model[key], device_ids=[i for i in range(num_workers)])
+    for key in model_ema:
+        model_ema[key] = MyDataParallel(model_ema[key], device_ids =[i for i in range(num_workers)])
     scheduler_params_dict = {key: scheduler_params.copy() for key in model}
     scheduler_params_dict['mapping_network']['max_lr'] = 2e-6
     optimizer = build_optimizer({key: model[key].parameters() for key in model},
