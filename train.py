@@ -39,6 +39,7 @@ torch.backends.cudnn.benchmark = True #
 @click.option('-p', '--config_path', default='Configs/config.yml', type=str)
 
 def main(config_path):
+    # @lw: load config
     config = yaml.safe_load(open(config_path))
 
     log_dir = config['log_dir']
@@ -52,6 +53,9 @@ def main(config_path):
     file_handler.setFormatter(logging.Formatter('%(levelname)s:%(asctime)s: %(message)s'))
     logger.addHandler(file_handler)
     
+    # @lw: what's the meaning to set the second parameter? since the .get returns the value in the config given key
+    # @lw: A: in case the user doesn't write some basic setting
+    # @lw: REF: https://docs.python.org/3/library/stdtypes.html#dict.get
     batch_size = config.get('batch_size', 10)
     device = config.get('device', 'cpu')
     epochs = config.get('epochs', 1000)
@@ -60,12 +64,15 @@ def main(config_path):
     val_path = config.get('val_data', None)
     stage = config.get('stage', 'star')
     fp16_run = config.get('fp16_run', False)
+    # @lw: add workers
+    num_workers = config.get('num_workers', 5)
     
     # load data
     train_list, val_list = get_data_path_list(train_path, val_path)
+    # @lw: num_works = the GPUs
     train_dataloader = build_dataloader(train_list,
                                         batch_size=batch_size,
-                                        num_workers=4,
+                                        num_workers=num_workers,
                                         device=device)
     val_dataloader = build_dataloader(val_list,
                                       batch_size=batch_size,
