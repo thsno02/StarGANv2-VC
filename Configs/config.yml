@@ -6,7 +6,7 @@ batch_size: 10
 pretrained_model: ""
 load_only_params: false
 fp16_run: true
-num_worker: 5
+num_workers: 5
 
 train_data: "Data/train_list.txt"
 val_data: "Data/val_list.txt"
