@@ -236,7 +236,7 @@ def convert(type, speaker, speakers, F0_model, vocoder, starganv2):
             sf.write(file_path, samplerate=24000, data=wave)
 
     end = time.time()
-    print('{} total processing time: {.3f} sec'.format(type, end - start))
+    print('{} total processing time: {:.3f} sec'.format(type, end - start))
 
 
 if __name__ == "__main__":
