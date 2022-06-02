@@ -18,6 +18,12 @@ from parallel_wavegan.utils import load_model  # load vocoder
 
 # %matplotlib inline
 
+to_mel = torchaudio.transforms.MelSpectrogram(n_mels=80,
+                                              n_fft=2048,
+                                              win_length=1200,
+                                              hop_length=300)
+mean, std = -4, 4
+
 
 def preprocess(wave):
     wave_tensor = torch.from_numpy(wave).float()
@@ -100,7 +106,7 @@ def load_vocoder(vocoder_path="./Vocoder/checkpoint-400000steps.pkl"):
     return vocoder
 
 
-def load_starganv2(gan_path='Models/yisa/epoch_00150.pth'):
+def load_starganv2(gan_path='Models/yisa/epoch_v2_00150.pth'):
     '''@lw
     return starGANv2
     :gan_path: default = Models/yisa/epoch_00150.pth'
@@ -129,25 +135,50 @@ def load_starganv2(gan_path='Models/yisa/epoch_00150.pth'):
     return starganv2
 
 
-def style_convert(speaker, speakers, F0_model, vocoder, starganv2):
+def convert(type, speaker, speakers, F0_model, vocoder, starganv2):
     '''@lw
     random sample 10 files and transform them to different speakers
+    :type: style or mapping
+    :speaker: index of the speaker or the speaker name
     '''
 
+    # @lw: check the style
+    assert type in [
+        'style', 'sty', 'mapping', 'map'
+    ], 'we only support two conversion manner: style and mapping.'
+    if type in ['style', 'sty']:
+        type = 'sty'
+    else:
+        type = 'map'
+
+    # @lw: unify the speaker to the speaker name
     if isinstance(speaker, int):
         speaker = speakers[speaker]
+    else:
+        # @lw: check whether the speaker in the list
+        assert speaker in speakers.values(
+        ), 'we only support the following speakers: {}.'.format('; '.join(
+            speakers.values()))
 
+    # @lw: config the path
     pred_path = os.path.join(os.getcwd(), 'Pred/yisa')
+    out_path = os.path.join(os.getcwd(), 'Output')
 
-    # with reference, using style encoder
+    # @lw: set reference
     speaker_dicts = {}
     for k, v in speakers.items():
         # all contain the speaker voice
-        ref_path = os.path.join(pred_path, v + '_0017.wav')
-        speaker_dicts[v] = (ref_path, k)
+        speaker_path = os.path.join(pred_path, v)
+        ref_path = os.path.join(speaker_path, v + '_00017.wav')
+        if type == 'sty':  # only style use reference
+            speaker_dicts[v] = (ref_path, k)
+        else:
+            speaker_dicts[v] = ('', k)
 
+    # @lw: compute reference embeddings
     reference_embeddings = compute_style(speaker_dicts)
 
+    # @lw: select 10 audios to convert
     speaker_path = os.path.join(pred_path, speaker)
     audio_files = os.listdir(speaker_path)
     # filter .DS_Store
@@ -196,86 +227,16 @@ def style_convert(speaker, speakers, F0_model, vocoder, starganv2):
 
         for key, wave in converted_samples.items():
             suffix = file_name.split('_')[-1]
-            file_name = '{sp}_to_{cvt}_style_{sf}'.format(sp=speaker,
+            file_name = '{sp}_to_{cvt}_{sty}_{sf}'.format(sp=speaker,
+                                                          sty=type,
                                                           cvt=key,
                                                           sf=suffix)
-            sf.write(file_name, samplerate=24000, data=wave)
+            converted_speaker = os.path.join(out_path, key)
+            file_path = os.path.join(converted_speaker, file_name)
+            sf.write(file_path, samplerate=24000, data=wave)
 
     end = time.time()
-    print('total processing time: %.3f sec' % (end - start))
-
-
-def mapping_convert(speaker, speakers, F0_model, vocoder, starganv2):
-    '''@lw
-    random sample 10 files and transform them to different speakers
-    '''
-    if isinstance(speaker, int):
-        speaker = speakers[speaker]
-
-    pred_path = os.path.join(os.getcwd(), 'Pred/yisa')
-
-    # with reference, using style encoder
-    speaker_dicts = {}
-    for k, v in speakers.items():
-        speaker_dicts[v] = ('', k)
-
-    reference_embeddings = compute_style(speaker_dicts)
-
-    speaker_path = os.path.join(pred_path, speaker)
-    audio_files = os.listdir(speaker_path)
-    # filter .DS_Store
-    audio_files = [i for i in audio_files if i.endswith('.wav')]
-    random.seed(2022)
-    selected_audio = random.sample(audio_files, 10)
-    start = time.time()
-
-    for file_name in selected_audio:
-        wav_path = os.path.join(speaker_path, file_name)
-        audio, source_sr = librosa.load(wav_path, sr=24000)
-        audio = audio / np.max(np.abs(audio))
-        audio.dtype = np.float32
-
-        # conversion
-        source = preprocess(audio).to('cuda:0')
-        keys = []
-        converted_samples = {}
-        reconstructed_samples = {}
-        converted_mels = {}
-
-        for key, (ref, _) in reference_embeddings.items():
-            with torch.no_grad():
-                f0_feat = F0_model.get_feature_GAN(source.unsqueeze(1))
-                out = starganv2.generator(source.unsqueeze(1), ref, F0=f0_feat)
-
-                c = out.transpose(-1, -2).squeeze().to('cuda')
-                y_out = vocoder.inference(c)
-                y_out = y_out.view(-1).cpu()
-
-                if key not in speaker_dicts or speaker_dicts[key][0] == "":
-                    recon = None
-                else:
-                    wave, sr = librosa.load(speaker_dicts[key][0], sr=24000)
-                    mel = preprocess(wave)
-                    c = mel.transpose(-1, -2).squeeze().to('cuda')
-                    recon = vocoder.inference(c)
-                    recon = recon.view(-1).cpu().numpy()
-
-            converted_samples[key] = y_out.numpy()
-            reconstructed_samples[key] = recon
-
-            converted_mels[key] = out
-
-            keys.append(key)
-
-        for key, wave in converted_samples.items():
-            suffix = file_name.split('_')[-1]
-            file_name = '{sp}_to_{cvt}_mapping_{sf}'.format(sp=speaker,
-                                                            cvt=key,
-                                                            sf=suffix)
-            sf.write(file_name, samplerate=24000, data=wave)
-
-    end = time.time()
-    print('total processing time: %.3f sec' % (end - start))
+    print('{} total processing time: {.3f} sec'.format(type, end - start))
 
 
 if __name__ == "__main__":
@@ -298,5 +259,6 @@ if __name__ == "__main__":
     }
 
     for k, speaker in speakers.items():
-        style_convert(speaker, speakers, F0_model, vocoder, starganv2)
-        mapping_convert(speaker, speakers, F0_model, vocoder, starganv2)
+        print(speaker)
+        convert('sty', speaker, speakers, F0_model, vocoder, starganv2)
+        convert('map', speaker, speakers, F0_model, vocoder, starganv2)
