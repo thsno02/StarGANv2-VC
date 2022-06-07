@@ -2,6 +2,7 @@ import sounddevice as sd
 import torch
 from utils import compute_style, F0_model, starganv2, vocoder, preprocess, speakers
 import numpy as np
+import time
 
 
 def convert(audio, speaker, F0_model, vocoder, starganv2):
