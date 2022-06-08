@@ -65,13 +65,25 @@ for device in device_list:
         print(f"Output device name is '{output_device}'.")
 
 # set input and output devices
-sd.default.device = input_device, output_device
+sd.default.device = 3, 5
 fs = 24000
 sd.default.samplerate = fs # set sample rate
-sd.default.channels = 1, 2 # one input channel, two output channel
+sd.default.channels = 2, 2 # one input channel, two output channel
 
 # set speak
 speaker = 'Shi_Zhuguo'
+# speakers = {
+#     0: 'Dong_Mingzhu',
+#     1: 'Hua_Chunying',
+#     2: 'Li_Fanping',
+#     3: 'Li_Gan',
+#     4: 'Luo_Xiang',
+#     5: 'Ma_Yun',
+#     6: 'Shi_Zhuguo',
+#     7: 'Wang_Cheng',
+#     8: 'Wang_Kun',
+#     9: 'Zhao_Lijian'
+# }
 
 
 # TODO: how to set the duration?
@@ -85,5 +97,10 @@ if __name__ == "__main__":
     # pre-process audio
     audio = audio / np.max(np.abs(audio))
     # convert audio to target speaker toned
+    print('begin converting')
+    start_time = time.time()
     converted_audio = convert(audio, speaker, F0_model, vocoder, starganv2)
+    end_time = time.time()
+    print('VC costs {:.4} s'.format(end_time - start_time))
+    print('begin playing')
     sd.playrec(converted_audio, fs)
