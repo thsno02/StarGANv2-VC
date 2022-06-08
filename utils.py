@@ -16,20 +16,20 @@ to_mel = torchaudio.transforms.MelSpectrogram(n_mels=80,
 mean, std = -4, 4
 
 
-def build_speakers():
-    cwd = os.getcwd()
-    data_path = os.path.join(cwd, 'Data')
-    speakers = []
-    for file in os.listdir(data_path):
-        # is directory and not raw
-        if os.path.isdir(os.path.join(data_path, file)) and '_' in file:
-            speakers.append(file)
-    speakers_dict = {}
-    for t in enumerate(speakers):
-        # @lw: key = speaker name, value = index
-        speakers_dict[t[1]] = t[0]
+# def build_speakers():
+#     cwd = os.getcwd()
+#     data_path = os.path.join(cwd, 'Data')
+#     speakers = []
+#     for file in os.listdir(data_path):
+#         # is directory and not raw
+#         if os.path.isdir(os.path.join(data_path, file)) and '_' in file:
+#             speakers.append(file)
+#     speakers_dict = {}
+#     for t in enumerate(speakers):
+#         # @lw: key = speaker name, value = index
+#         speakers_dict[t[1]] = t[0]
 
-    return speakers_dict
+#     return speakers_dict
 
 
 def preprocess(wave):
@@ -144,17 +144,19 @@ def load_starganv2(gan_path='Models/epoch_v2_00248.pth'):
     return starganv2
 
 
-speakers = build_speakers()
-# {0: 'Dong_Mingzhu',
-#  1: 'Hua_Chunying',
-#  2: 'Li_Fanping',
-#  3: 'Li_Gan',
-#  4: 'Luo_Xiang',
-#  5: 'Ma_Yun',
-#  6: 'Shi_Zhuguo',
-#  7: 'Wang_Cheng',
-#  8: 'Wang_Kun',
-#  9: 'Zhao_Lijian'}
+# speakers = build_speakers()
+speakers = {
+    0: 'Dong_Mingzhu',
+    1: 'Hua_Chunying',
+    2: 'Li_Fanping',
+    3: 'Li_Gan',
+    4: 'Luo_Xiang',
+    5: 'Ma_Yun',
+    6: 'Shi_Zhuguo',
+    7: 'Wang_Cheng',
+    8: 'Wang_Kun',
+    9: 'Zhao_Lijian'
+}
 
 starganv2 = load_starganv2()
 F0_model = load_F0()
