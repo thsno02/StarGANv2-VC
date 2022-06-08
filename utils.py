@@ -115,15 +115,15 @@ def load_vocoder(vocoder_path="./Vocoder/checkpoint-400000steps.pkl"):
     return vocoder
 
 
-def load_starganv2(gan_path='Models/yisa/epoch_v2_00150.pth'):
+def load_starganv2(gan_path='Models/epoch_v2_00248.pth'):
     '''@lw
     return starGANv2
-    :gan_path: default = Models/yisa/epoch_00150.pth'
+    :gan_path: default = Models/epoch_v2_00248.pth'
     '''
 
     assert torch.cuda.is_available(), "CUDA is unavailable."
 
-    with open('Models/yisa/config.yml') as f:
+    with open('Models/config.yml') as f:
         starganv2_config = yaml.safe_load(f)
     starganv2 = build_model(model_params=starganv2_config["model_params"])
     params = torch.load(gan_path, map_location='cpu')
