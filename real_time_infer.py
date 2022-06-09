@@ -71,7 +71,7 @@ sd.default.samplerate = fs # set sample rate
 sd.default.channels = 2, 2 # one input channel, two output channel
 
 # set speak
-speaker = 'Shi_Zhuguo'
+speaker = 6
 # speakers = {
 #     0: 'Dong_Mingzhu',
 #     1: 'Hua_Chunying',
@@ -87,15 +87,18 @@ speaker = 'Shi_Zhuguo'
 
 
 # TODO: how to set the duration?
-duration = 15 # seconds
+duration = 2 # seconds
 
 
 if __name__ == "__main__":
     print('begin recording')
     # record voice
     audio = sd.rec(int(duration * fs), dtype = 'float32')
+    sd.wait() # wait to recording
     # pre-process audio
     audio = audio / np.max(np.abs(audio))
+    audio.flatten() # flatten the 2D numpy array
+    # print('audio length is {}'.format(len(audio)))
     # convert audio to target speaker toned
     print('begin converting')
     start_time = time.time()
@@ -103,4 +106,4 @@ if __name__ == "__main__":
     end_time = time.time()
     print('VC costs {:.4} s'.format(end_time - start_time))
     print('begin playing')
-    sd.playrec(converted_audio, fs)
+    sd.play(converted_audio, fs)
