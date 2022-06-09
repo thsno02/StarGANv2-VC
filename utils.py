@@ -33,7 +33,9 @@ mean, std = -4, 4
 
 
 def preprocess(wave):
+    # print('wave length is {}'.format(len(wave)))
     wave_tensor = torch.from_numpy(wave).float()
+    # print('wave_tensor size is {}'.format(wave_tensor.size()))
     mel_tensor = to_mel(wave_tensor)
     mel_tensor = (torch.log(1e-5 + mel_tensor.unsqueeze(0)) - mean) / std
     return mel_tensor
@@ -65,7 +67,7 @@ def compute_style(speaker_dicts):
     for key, (path, speaker) in speaker_dicts.items():
         if path == "":
             # @lw: speaker = idx of the speaker name
-            label = torch.LongTensor([speaker]).to('cuda')
+            label = torch.LongTensor([key]).to('cuda')
             latent_dim = starganv2.mapping_network.shared[0].in_features
             # @lw: get the reference embedding from the mapping network
             ref = starganv2.mapping_network(
@@ -78,7 +80,7 @@ def compute_style(speaker_dicts):
             mel_tensor = preprocess(wave).to('cuda')
 
             with torch.no_grad():
-                label = torch.LongTensor([speaker])
+                label = torch.LongTensor([key])
                 ref = starganv2.style_encoder(mel_tensor.unsqueeze(1), label)
         reference_embeddings[key] = (ref, label)
 
