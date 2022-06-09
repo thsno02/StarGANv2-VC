@@ -24,11 +24,13 @@ def convert(audio, speaker, F0_model, vocoder, starganv2):
 
     # @lw: compute reference embeddings
     reference_embeddings = compute_style(speaker_dicts)
+    # print(f'ref embedding is {reference_embeddings}')
 
     start = time.time()
 
     # conversion
     source = preprocess(audio).to('cuda:0')
+    print('length of source is {}'.format(source.size()))
     converted_audio = None
 
     for key, (ref, _) in reference_embeddings.items():
@@ -37,10 +39,12 @@ def convert(audio, speaker, F0_model, vocoder, starganv2):
             out = starganv2.generator(source.unsqueeze(1), ref, F0=f0_feat)
 
             c = out.transpose(-1, -2).squeeze().to('cuda')
+            print('c size is {}'.format(c.size()))
             y_out = vocoder.inference(c)
             y_out = y_out.view(-1).cpu()
 
         converted_audio = y_out.numpy()
+        print('converted_audio {}'.format(len(converted_audio)))
 
     end = time.time()
     print('{} total processing time: {:.3f} sec'.format(type, end - start))
@@ -68,7 +72,7 @@ for device in device_list:
 sd.default.device = 3, 5
 fs = 24000
 sd.default.samplerate = fs # set sample rate
-sd.default.channels = 2, 2 # one input channel, two output channel
+sd.default.channels = 1, 1 # one input channel, two output channel
 
 # set speak
 speaker = 6
@@ -87,23 +91,32 @@ speaker = 6
 
 
 # TODO: how to set the duration?
-duration = 2 # seconds
+duration = 5 # seconds
 
 
 if __name__ == "__main__":
     print('begin recording')
     # record voice
+    start_time = time.time()
     audio = sd.rec(int(duration * fs), dtype = 'float32')
+    print('raw audio length is {}'.format(len(audio)))
     sd.wait() # wait to recording
+    end_time = time.time()
+    print('rec costs {:.4} s'.format(end_time - start_time))
     # pre-process audio
-    audio = audio / np.max(np.abs(audio))
-    audio.flatten() # flatten the 2D numpy array
-    # print('audio length is {}'.format(len(audio)))
+    # audio = audio / np.max(np.abs(audio))
+    audio = audio.flatten() # flatten the 2D numpy array
+    print('audio length is {}'.format(len(audio)))
     # convert audio to target speaker toned
     print('begin converting')
     start_time = time.time()
     converted_audio = convert(audio, speaker, F0_model, vocoder, starganv2)
+    print('converted_audio length is {}'.format(len(converted_audio)))
     end_time = time.time()
     print('VC costs {:.4} s'.format(end_time - start_time))
     print('begin playing')
+    start_time = time.time()
     sd.play(converted_audio, fs)
+    sd.wait() # wait to playing
+    end_time = time.time()
+    print('play costs {:.4} s'.format(end_time - start_time))
