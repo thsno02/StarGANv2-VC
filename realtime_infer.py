@@ -69,12 +69,19 @@ try:
     noisy_part = None
 
     def callback(indata, outdata, frames, time, status):
+        """ @lw
+        callback is used to process the indata (recording audio) and yield outdata (converted audio)
+        
+        """
         global callback_status
         global mel_buffer
         global wave_buffer
         global previous_wave
         global wave_average
 
+        # @lw: why use |= in here?
+        # @lw: check the overflow or underflow status
+        # @lw: TODO: how to adjust the buffer size dynamically?
         callback_status |= status
         with torch.no_grad():
             audio = indata[:, 0].squeeze()
