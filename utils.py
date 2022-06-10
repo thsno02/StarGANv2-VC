@@ -33,9 +33,7 @@ mean, std = -4, 4
 
 
 def preprocess(wave):
-    # print('wave length is {}'.format(len(wave)))
     wave_tensor = torch.from_numpy(wave).float()
-    # print('wave_tensor size is {}'.format(wave_tensor.size()))
     mel_tensor = to_mel(wave_tensor)
     mel_tensor = (torch.log(1e-5 + mel_tensor.unsqueeze(0)) - mean) / std
     return mel_tensor
