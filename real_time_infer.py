@@ -43,8 +43,9 @@ sd.default.samplerate = fs  # set sample rate
 sd.default.channels = 1, 2  # one input channel, two output channel
 
 if __name__ == "__main__":
+    # TODO: replace this with the begin status
     while True:
-        # set speak
+        # TODO: set the speaker from the speaker status
         speaker = int(input('plz type the target speaker'))
         # speakers = {
         #     0: 'Dong_Mingzhu',
@@ -69,6 +70,7 @@ if __name__ == "__main__":
         def callback(in_data, frames, time, status):
             q.put(in_data.copy())
 
+        # TODO: send the 'begin recording' status
         try:
             with sd.InputStream(samplerate=fs,
                                 device=input_device,
@@ -82,6 +84,7 @@ if __name__ == "__main__":
                 print('#' * 80)
                 while True:
                     audio = np.append(audio, q.get(), axis=0)
+        # TODO: replace this with the stop status
         except KeyboardInterrupt:
             log('\tRecording costs {} s'.format(get_time_dif(start_time)))
             start_time = time.time()
