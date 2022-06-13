@@ -3,6 +3,7 @@ from model import Model
 import numpy as np
 import time
 from datetime import datetime
+import queue
 
 
 def log(s: str):
@@ -43,46 +44,61 @@ sd.default.channels = 1, 2  # one input channel, two output channel
 
 if __name__ == "__main__":
     while True:
+        # set speak
+        speaker = int(input('plz type the target speaker'))
+        # speakers = {
+        #     0: 'Dong_Mingzhu',
+        #     1: 'Hua_Chunying',
+        #     2: 'Li_Fanping',
+        #     3: 'Li_Gan',
+        #     4: 'Luo_Xiang',
+        #     5: 'Ma_Yun',
+        #     6: 'Shi_Zhuguo',
+        #     7: 'Wang_Cheng',
+        #     8: 'Wang_Kun',
+        #     9: 'Zhao_Lijian'
+        # }
+        log('\tThe target speaker is {}. {}'.format(speaker,
+                                                    model.speakers[speaker]))
+
+        audio = np.zeros(
+            shape=(24000,
+                   1))  # add zero-filled buffer to promote the performance
+        q = queue.Queue()
+
+        def callback(in_data, frames, time, status):
+            q.put(in_data.copy())
+
         try:
-            # set speak
-            speaker = int(input('plz type the target speaker'))
-            # speakers = {
-            #     0: 'Dong_Mingzhu',
-            #     1: 'Hua_Chunying',
-            #     2: 'Li_Fanping',
-            #     3: 'Li_Gan',
-            #     4: 'Luo_Xiang',
-            #     5: 'Ma_Yun',
-            #     6: 'Shi_Zhuguo',
-            #     7: 'Wang_Cheng',
-            #     8: 'Wang_Kun',
-            #     9: 'Zhao_Lijian'
-            # }
-            log('\tThe target speaker is {}. {}'.format(speaker,
-                                                        model.speakers[speaker]))
-            # TODO: how to set the duration?
-            duration = int(input('plz type the duration (seconds)'))  # seconds
-            log('\tThe duration is {} s'.format(duration))
-            print('begin recording')
-            # record voice
-            start_time = time.time()
-            audio = sd.rec(int(duration * fs), dtype='float32')
-            sd.wait()  # wait to recording
-            print('recording finish')
-            log('\tRecording costs {} s'.format(get_time_dif(start_time)))
-            # pre-process audio
-            audio = audio / np.max(np.abs(audio))
-            audio = audio.flatten()  # flatten the 2D numpy array
-            # convert audio to target speaker tone
-            print('begin converting')
-            start_time = time.time()
-            converted_audio = model.infer(audio, speaker)
-            log('\tVC costs {:.4} s'.format(get_time_dif(start_time)))
-            print('begin playing')
-            start_time = time.time()
-            sd.play(converted_audio, fs)
-            sd.wait()  # wait to playing
-            print('playing finish')
-            log('\tPlaying costs {:.4} s'.format(get_time_dif(start_time)))
+            with sd.InputStream(samplerate=fs,
+                                device=input_device,
+                                dtype='float32',
+                                channels=1,
+                                callback=callback):
+                start_time = time.time()
+
+                print('#' * 80)
+                print('press Ctrl+C to stop the recording')
+                print('#' * 80)
+                while True:
+                    audio = np.append(audio, q.get(), axis=0)
         except KeyboardInterrupt:
-            print('Thank you.')
+            log('\tRecording costs {} s'.format(get_time_dif(start_time)))
+            start_time = time.time()
+            sd.play(audio)
+            sd.wait()
+            log('\tPlaying costs {} s'.format(get_time_dif(start_time)))
+        # pre-process audio
+        audio = audio / np.max(np.abs(audio))
+        audio = audio.flatten()  # flatten the 2D numpy array
+        # convert audio to target speaker tone
+        print('begin converting')
+        start_time = time.time()
+        converted_audio = model.infer(audio, speaker)
+        log('\tVC costs {:.4} s'.format(get_time_dif(start_time)))
+        print('begin playing')
+        start_time = time.time()
+        sd.play(converted_audio, fs)
+        sd.wait()  # wait to playing
+        print('playing finish')
+        log('\tPlaying costs {:.4} s'.format(get_time_dif(start_time)))
