@@ -1,10 +1,10 @@
 import sounddevice as sd
 
 # set input and output devices
-sd.default.device = 3, 5
+sd.default.device = 0, 1
 fs = 24000
 sd.default.samplerate = fs # set sample rate
-sd.default.channels = 2, 2 # one input channel, two output channel
+sd.default.channels = 1, 2 # one input channel, two output channel
 
 duration = 10 # seconds
 
