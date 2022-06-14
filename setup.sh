@@ -1,5 +1,5 @@
-conda create -n test python=3.9
-source activate test
+conda create -n vc python=3.9
+source activate vc
 # conda config
 conda config --set ssl_verify true 
 conda config --set proxy_servers.http http://127.0.0.1:7890
