@@ -26,18 +26,16 @@ sd._initialize()
 # show the available devices
 device_list = sd.query_devices()
 print(f'the device list is: \n{device_list}.\n')
-for device in device_list:
-    # TODO: automatically find the available bluetooth devices
-    # As for now, use headphone instead
-    if 'USB PnP Sound Device' in device['name']:
-        input_device = device['name']
-        print(f"Input device name is '{input_device}'.")
-    elif 'USB PnP Sound Device' in device['name']:
-        output_device = device['name']
-        print(f"Output device name is '{output_device}'.")
+# for device in device_list:
+#     # TODO: automatically find the available bluetooth devices
+#     # As for now, use headphone instead
+#     if 'USB PnP Sound Device' in device['name']:
+#         input_device = device['name']
+#         print(f"Input device name is '{input_device}'.")
+#     elif 'USB PnP Sound Device' in device['name']:
+#         output_device = device['name']
+#         print(f"Output device name is '{output_device}'.")
 
-# set input and output devices
-sd.default.device = input_device, output_device
 fs = 24000
 sd.default.samplerate = fs  # set sample rate
 sd.default.channels = 1, 2  # one input channel, two output channel
@@ -45,6 +43,12 @@ sd.default.channels = 1, 2  # one input channel, two output channel
 if __name__ == "__main__":
     # TODO: replace this with the begin status
     while True:
+        # MME wins
+        input_device = int(input('plz type the input device'))
+        output_device = int(input('plz type the output device'))
+
+        # set input and output devices
+        sd.default.device = input_device, output_device
         # TODO: set the speaker from the speaker status
         speaker = int(input('plz type the target speaker'))
         # speakers = {
@@ -86,11 +90,12 @@ if __name__ == "__main__":
                     audio = np.append(audio, q.get(), axis=0)
         # TODO: replace this with the stop status
         except KeyboardInterrupt:
-            log('\tRecording costs {} s'.format(get_time_dif(start_time)))
-            start_time = time.time()
-            sd.play(audio)
-            sd.wait()
-            log('\tPlaying costs {} s'.format(get_time_dif(start_time)))
+            print('end recording')
+            # log('\tRecording costs {} s'.format(get_time_dif(start_time)))
+            # start_time = time.time()
+            # sd.play(audio)
+            # sd.wait()
+            # log('\tPlaying costs {} s'.format(get_time_dif(start_time)))
         # pre-process audio
         audio = audio / np.max(np.abs(audio))
         audio = audio.flatten()  # flatten the 2D numpy array
