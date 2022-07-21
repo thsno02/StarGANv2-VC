@@ -1,7 +1,13 @@
 import sounddevice as sd
+import numpy as np
+import time
+import queue
 
-# set input and output devices
-sd.default.device = 0, 1
+np.set_printoptions(threshold=np.inf)
+
+sd._terminate()
+sd._initialize()
+sd.default.reset()  # reset all the default setting
 fs = 24000
 sd.default.samplerate = fs  # set sample rate
 sd.default.channels = 1, 2  # one input channel, two output channel
@@ -23,7 +29,6 @@ sd.default.channels = 1, 2  # specify the input/output channels
 def callback(in_data, frames, time, status):
     """This is called (from a separate thread) for each audio block."""
     q.put(in_data.copy())
-
 
 while True:
     audio = np.zeros(shape=(24000, 1), dtype='float32')
@@ -51,6 +56,14 @@ while True:
         print('\nRecording finished: costs {} {}'.format(
             end_time - start_time, np.shape(audio)))
         start_time = time.time()
+        sd.play(audio)
+        sd.wait()
+        end_time = time.time()
+        print('\nPlaying finished: costs {}'.format(end_time - start_time))
+        print('\nRecording finished: costs {} {}'.format(end_time - start_time,
+                                                        np.shape(audio)))
+        start_time = time.time()
+        print(audio)
         sd.play(audio)
         sd.wait()
         end_time = time.time()
